@@ -40,12 +40,13 @@ public:
 
     virtual void OnAfterConfigLoad(bool /*Reload*/) override
     {
-        std::string blockedTalentsStr = sConfigMgr->GetStringDefault("Arena1v1.ForbiddenTalentsIDs", "");
-        Tokenizer toks(blockedTalentsStr, ',');
-        for (auto&& token : toks)
+        std::stringstream ss(sConfigMgr->GetStringDefault("Arena1v1.ForbiddenTalentsIDs", "0"));
+
+        for (std::string blockedTalentsStr; std::getline(ss, blockedTalentsStr, ',');)
         {
-            forbiddenTalents.push_back(std::stoi(token));
-        }
+            forbiddenTalents.push_back(stoi(blockedTalentsStr));
+        }		
+				
         ARENA_SLOT_1V1 = sConfigMgr->GetIntDefault("Arena1v1.ArenaSlotID", 3);
         
         ArenaTeam::ArenaSlotByType.insert({ ARENA_TEAM_1V1, ARENA_SLOT_1V1 });
