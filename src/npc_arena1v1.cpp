@@ -40,13 +40,14 @@ public:
 
     virtual void OnAfterConfigLoad(bool /*Reload*/) override
     {
-        std::string blockedTalentsStr = sConfigMgr->GetStringDefault("Arena1v1.ForbiddenTalentsIDs", "");
-        Tokenizer toks(blockedTalentsStr, ',');
-        for (auto&& token : toks)
+        std::stringstream ss(sConfigMgr->GetOption<std::string>("Arena1v1.ForbiddenTalentsIDs", "0"));
+
+        for (std::string blockedTalentsStr; std::getline(ss, blockedTalentsStr, ',');)
         {
-            forbiddenTalents.push_back(std::stoi(token));
-        }
-        ARENA_SLOT_1V1 = sConfigMgr->GetIntDefault("Arena1v1.ArenaSlotID", 3);
+            forbiddenTalents.push_back(stoi(blockedTalentsStr));
+        }		
+				
+        ARENA_SLOT_1V1 = sConfigMgr->GetOption<uint32>("Arena1v1.ArenaSlotID", 3);
         
         ArenaTeam::ArenaSlotByType.insert({ ARENA_TEAM_1V1, ARENA_SLOT_1V1 });
         ArenaTeam::ArenaReqPlayersForType.insert({ ARENA_TYPE_1V1, 2 });
@@ -65,14 +66,14 @@ public:
 
     void OnLogin(Player* pPlayer) override
     {
-        if (sConfigMgr->GetBoolDefault("Arena1v1.Announcer", true))
+        if (sConfigMgr->GetOption<bool>("Arena1v1.Announcer", true))
             ChatHandler(pPlayer->GetSession()).SendSysMessage("This server is running the |cff4CFF00Arena 1v1 |rmodule.");
     }
 
 
     void GetCustomGetArenaTeamId(const Player* player, uint8 slot, uint32& id) const override
     {
-        if (slot == sConfigMgr->GetIntDefault("Arena1v1.ArenaSlotID", 3))
+        if (slot == sConfigMgr->GetOption<uint32>("Arena1v1.ArenaSlotID", 3))
         {
             if (ArenaTeam* at = sArenaTeamMgr->GetArenaTeamByCaptain(player->GetGUID(), ARENA_TEAM_1V1))
             {
@@ -84,7 +85,7 @@ public:
 
     void GetCustomArenaPersonalRating(const Player* player, uint8 slot, uint32& rating) const override
     {
-        if (slot == sConfigMgr->GetIntDefault("Arena1v1.ArenaSlotID", 3))
+        if (slot == sConfigMgr->GetOption<uint32>("Arena1v1.ArenaSlotID", 3))
         {
             if (ArenaTeam* at = sArenaTeamMgr->GetArenaTeamByCaptain(player->GetGUID(), ARENA_TEAM_1V1))
             {
@@ -96,7 +97,7 @@ public:
 
     void OnGetMaxPersonalArenaRatingRequirement(const Player* player, uint32 minslot, uint32& maxArenaRating) const override
     {
-        if (sConfigMgr->GetBoolDefault("Arena1v1.VendorRating", false) && minslot < (uint32)sConfigMgr->GetIntDefault("Arena1v1.ArenaSlotID", 3))
+        if (sConfigMgr->GetOption<bool>("Arena1v1.VendorRating", false) && minslot < (uint32)sConfigMgr->GetOption<uint32>("Arena1v1.ArenaSlotID", 3))
         {
             if (ArenaTeam* at = sArenaTeamMgr->GetArenaTeamByCaptain(player->GetGUID(), ARENA_TEAM_1V1))
             {
@@ -116,7 +117,7 @@ public:
         if (!player || !creature)
             return true;
 
-        if (sConfigMgr->GetBoolDefault("Arena1v1.Enable", true) == false)
+        if (sConfigMgr->GetOption<bool>("Arena1v1.Enable", true) == false)
         {
             ChatHandler(player->GetSession()).SendSysMessage("1v1 disabled!");
             return true;
@@ -133,7 +134,7 @@ public:
 
         if (!player->GetArenaTeamId(ArenaTeam::GetSlotByType(ARENA_TEAM_1V1)))
         {
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Create new 1v1 Arena Team", GOSSIP_SENDER_MAIN, 1, "Are you sure?", sConfigMgr->GetIntDefault("Arena1v1.Costs", 400000), false);
+            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Create new 1v1 Arena Team", GOSSIP_SENDER_MAIN, 1, "Are you sure?", sConfigMgr->GetOption<uint32>("Arena1v1.Costs", 400000), false);
         }
         else
         {
@@ -163,14 +164,14 @@ public:
         {
         case 1: // Create new Arenateam
         {
-            if (sConfigMgr->GetIntDefault("Arena1v1.MinLevel", 80) <= player->getLevel())
+            if (sConfigMgr->GetOption<uint32>("Arena1v1.MinLevel", 80) <= player->getLevel())
             {
-                if (player->GetMoney() >= uint32(sConfigMgr->GetIntDefault("Arena1v1.Costs", 400000)) && CreateArenateam(player, creature))
-                    player->ModifyMoney(sConfigMgr->GetIntDefault("Arena1v1.Costs", 400000) * -1);
+                if (player->GetMoney() >= uint32(sConfigMgr->GetOption<uint32>("Arena1v1.Costs", 400000)) && CreateArenateam(player, creature))
+                    player->ModifyMoney(sConfigMgr->GetOption<uint32>("Arena1v1.Costs", 400000) * -1);
             }
             else
             {
-                handler.PSendSysMessage("You have to be level %u + to create a 1v1 arena team.", sConfigMgr->GetIntDefault("Arena1v1.MinLevel", 70));
+                handler.PSendSysMessage("You have to be level %u + to create a 1v1 arena team.", sConfigMgr->GetOption<uint32>("Arena1v1.MinLevel", 70));
                 CloseGossipMenuFor(player);
                 return true;
             }
@@ -252,7 +253,7 @@ private:
         if (!player || !me)
             return false;
 
-        if (sConfigMgr->GetIntDefault("Arena1v1.MinLevel", 80) > player->getLevel())
+        if (sConfigMgr->GetOption<uint32>("Arena1v1.MinLevel", 80) > player->getLevel())
             return false;
 
         uint8 arenaslot = ArenaTeam::GetSlotByType(ARENA_TEAM_1V1);
@@ -384,7 +385,7 @@ private:
         if (!player)
             return false;
 
-        if (sConfigMgr->GetBoolDefault("Arena1v1.BlockForbiddenTalents", true) == false)
+        if (sConfigMgr->GetOption<bool>("Arena1v1.BlockForbiddenTalents", true) == false)
             return true;
 
         uint32 count = 0;
@@ -427,7 +428,7 @@ public:
     {
         if (type == ARENA_TEAM_1V1)
         {
-            slot = sConfigMgr->GetIntDefault("Arena1v1.ArenaSlotID", 3);
+            slot = sConfigMgr->GetOption<uint32>("Arena1v1.ArenaSlotID", 3);
         }
     }
 
@@ -436,7 +437,7 @@ public:
     {
         if (at->GetType() == ARENA_TEAM_1V1)
         {
-            points *= sConfigMgr->GetFloatDefault("Arena1v1.ArenaPointsMulti", 0.64f);
+            points *= sConfigMgr->GetOption<float>("Arena1v1.ArenaPointsMulti", 0.64f);
         }
     }
 
