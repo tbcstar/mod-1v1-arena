@@ -269,7 +269,7 @@ private:
         Battleground* bg = sBattlegroundMgr->GetBattlegroundTemplate(BATTLEGROUND_AA);
         if (!bg)
         {
-            sLog->outString("Battleground: template bg (all arenas) not found");
+            LOG_ERROR("module", "Battleground: template bg (all arenas) not found");
             return false;
         }
 
