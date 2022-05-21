@@ -49,8 +49,8 @@ public:
 				
         ARENA_SLOT_1V1 = sConfigMgr->GetOption<uint32>("Arena1v1.ArenaSlotID", 3);
         
-        ArenaTeam::ArenaSlotByType.insert({ ARENA_TEAM_1V1, ARENA_SLOT_1V1 });
-        ArenaTeam::ArenaReqPlayersForType.insert({ ARENA_TYPE_1V1, 2 });
+        ArenaTeam::ArenaSlotByType.emplace(ARENA_TEAM_1V1, ARENA_SLOT_1V1);
+        ArenaTeam::ArenaReqPlayersForType.emplace(ARENA_TYPE_1V1, 2);
         
         BattlegroundMgr::queueToBg.insert({ BATTLEGROUND_QUEUE_1V1,   BATTLEGROUND_AA });
         BattlegroundMgr::QueueToArenaType.emplace(BATTLEGROUND_QUEUE_1V1, (ArenaType) ARENA_TYPE_1V1);
@@ -313,11 +313,12 @@ private:
         }
 
         BattlegroundQueue& bgQueue = sBattlegroundMgr->GetBattlegroundQueue(bgQueueTypeId);
-        bgQueue.SetBgTypeIdAndArenaType(BATTLEGROUND_AA, ARENA_TYPE_1V1);
+        BattlegroundTypeId bgTypeId = BATTLEGROUND_AA;
+
         bg->SetRated(isRated);
         bg->SetMaxPlayersPerTeam(1);
 
-        GroupQueueInfo* ginfo = bgQueue.AddGroup(player, nullptr, bracketEntry, isRated, false, arenaRating, matchmakerRating, ateamId);
+        GroupQueueInfo* ginfo = bgQueue.AddGroup(player, nullptr, bgTypeId, bracketEntry, arenatype, isRated != 0, false, arenaRating, matchmakerRating, ateamId, 0);
         uint32 avgTime = bgQueue.GetAverageQueueWaitTime(ginfo);
         uint32 queueSlot = player->AddBattlegroundQueueId(bgQueueTypeId);
 
@@ -326,7 +327,7 @@ private:
         sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, bg, queueSlot, STATUS_WAIT_QUEUE, avgTime, 0, arenatype, TEAM_NEUTRAL, isRated);
         player->GetSession()->SendPacket(&data);
 
-        sBattlegroundMgr->ScheduleArenaQueueUpdate(matchmakerRating, bgQueueTypeId, bracketEntry->GetBracketId());
+        sBattlegroundMgr->ScheduleQueueUpdate(matchmakerRating, arenatype, bgQueueTypeId, bgTypeId, bracketEntry->GetBracketId());
 
         return true;
     }
